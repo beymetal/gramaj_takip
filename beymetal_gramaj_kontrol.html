@@ -573,8 +573,8 @@
             border-radius: 0 0 8px 8px;
             max-height: 200px;
             overflow-y: auto;
-            z-index: 99999;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 100000;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
         }
 
         .suggestion-item {
@@ -916,7 +916,7 @@
                     <h3>Gramaj Ölçümü</h3>
                     <div class="form-group">
                         <label for="kalip-input">Kalıp Seçin:</label>
-                        <div style="position: relative; z-index: 1000;">
+                        <div style="position: relative; z-index: 10000;">
                             <input type="text" class="form-control" id="kalip-input" 
                                    placeholder="Kalıp numarası yazın (örn: lr4151)" 
                                    oninput="showKalipSuggestions()" 
