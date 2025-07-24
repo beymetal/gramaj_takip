@@ -571,10 +571,10 @@
             border: 2px solid #ddd;
             border-top: none;
             border-radius: 0 0 8px 8px;
-            max-height: 200px;
+            max-height: 250px;
             overflow-y: auto;
-            z-index: 100000;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            z-index: 99999;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         }
 
         .suggestion-item {
@@ -942,9 +942,9 @@
                     <div id="sonuc-kartlari"></div>
                 </div>
 
-                <div class="table-container" style="position: relative; z-index: 1;">
+                <div class="table-container" id="gramaj-table-container" style="position: relative; z-index: 0; margin-top: 30px; transition: margin-top 0.3s ease;">
                     <table id="gramaj-table">
-                        <thead style="position: sticky; top: 0; background: white; z-index: 2;">
+                        <thead style="position: sticky; top: 0; background: white; z-index: 1;">
                             <tr>
                                 <th>Tarih</th>
                                 <th>Kalıp Kodu</th>
@@ -1587,20 +1587,25 @@
         function showKalipSuggestions() {
             const input = document.getElementById('kalip-input');
             const suggestionsDiv = document.getElementById('kalip-suggestions');
+            const tableContainer = document.getElementById('gramaj-table-container');
             const query = input.value.toLowerCase().trim();
 
             if (query.length === 0) {
                 suggestionsDiv.style.display = 'none';
+                // Tablo normal pozisyonuna dönsün
+                tableContainer.style.marginTop = '30px';
                 return;
             }
 
             // Eşleşen kalıpları bul
             const matches = kalipData.filter(item => 
                 item.kalipKodu.toLowerCase().includes(query)
-            ).slice(0, 10); // Maksimum 10 öneri
+            ).slice(0, 15); // Maksimum 15 öneri
 
             if (matches.length === 0) {
                 suggestionsDiv.style.display = 'none';
+                // Tablo normal pozisyonuna dönsün
+                tableContainer.style.marginTop = '30px';
                 return;
             }
 
@@ -1623,6 +1628,11 @@
                 </div>
             `).join('');
 
+            // Dropdown boyutuna göre tablo margin'ını ayarla
+            const dropdownHeight = Math.min(250, uniqueMatches.length * 50);
+            const newMargin = 30 + dropdownHeight + 10; // 10px ekstra boşluk
+            tableContainer.style.marginTop = newMargin + 'px';
+            
             suggestionsDiv.style.display = 'block';
         }
 
@@ -1686,7 +1696,10 @@
         function hideKalipSuggestions() {
             setTimeout(() => {
                 const suggestionsDiv = document.getElementById('kalip-suggestions');
+                const tableContainer = document.getElementById('gramaj-table-container');
                 suggestionsDiv.style.display = 'none';
+                // Tablo normal pozisyonuna dönsün
+                tableContainer.style.marginTop = '30px';
             }, 200); // Kısa gecikme ile tıklama olayını yakala
         }
 
