@@ -1935,16 +1935,29 @@
                     return false;
                 }
 
-                // Verileri kaydet
-                kalipData = processedData.map((item, index) => ({
-                    id: index + 1,
-                    kalipKodu: item.kalipKodu,
-                    figur: item.figur,
-                    kgM: item.kgM,
-                    isDuplicate: processedData.filter(p => p.kalipKodu === item.kalipKodu).length > 1
-                }));
+                // Verileri kaydet ve yinelenen kontrolü yap
+                kalipData = processedData.map((item, index) => {
+                    const duplicateCount = processedData.filter(p => 
+                        p.kalipKodu && item.kalipKodu && 
+                        p.kalipKodu.trim() === item.kalipKodu.trim()
+                    ).length;
+                    
+                    return {
+                        id: index + 1,
+                        kalipKodu: item.kalipKodu,
+                        figur: item.figur,
+                        kgM: item.kgM,
+                        isDuplicate: duplicateCount > 1
+                    };
+                });
 
                 console.log('Kalıp data oluşturuldu:', kalipData.length);
+                
+                // Debug: Yinelenen kalıpları göster
+                const duplicateKalips = kalipData.filter(item => item.isDuplicate);
+                const uniqueKalipCodes = [...new Set(duplicateKalips.map(item => item.kalipKodu))];
+                console.log('Yinelenen kalıp kodları:', uniqueKalipCodes);
+                console.log('Toplam yinelenen kayıt sayısı:', duplicateKalips.length);
 
                 // Local storage'a kaydet
                 localStorage.setItem('kalipData', JSON.stringify(kalipData));
@@ -2022,13 +2035,20 @@
 
         // Verileri onayla ve yükle
         function confirmData() {
-            kalipData = previewData.map((item, index) => ({
-                id: index + 1,
-                kalipKodu: item.kalipKodu,
-                figur: item.figur,
-                kgM: item.kgM,
-                isDuplicate: previewData.filter(p => p.kalipKodu === item.kalipKodu).length > 1
-            }));
+            kalipData = previewData.map((item, index) => {
+                const duplicateCount = previewData.filter(p => 
+                    p.kalipKodu && item.kalipKodu && 
+                    p.kalipKodu.trim() === item.kalipKodu.trim()
+                ).length;
+                
+                return {
+                    id: index + 1,
+                    kalipKodu: item.kalipKodu,
+                    figur: item.figur,
+                    kgM: item.kgM,
+                    isDuplicate: duplicateCount > 1
+                };
+            });
 
             // Local storage'a kaydet
             localStorage.setItem('kalipData', JSON.stringify(kalipData));
@@ -2092,10 +2112,25 @@
                 return;
             }
 
-            // Eşleşen kalıpları bul
+            // Eşleşen kalıpları bul ve sırala
             const matches = kalipData.filter(item => 
                 item.kalipKodu.toLowerCase().includes(query)
-            ).slice(0, 15); // Maksimum 15 öneri
+            ).sort((a, b) => {
+                // Tam eşleşen önce gelsin
+                const aExact = a.kalipKodu.toLowerCase() === query;
+                const bExact = b.kalipKodu.toLowerCase() === query;
+                if (aExact && !bExact) return -1;
+                if (!aExact && bExact) return 1;
+                
+                // Sonra başlangıçta eşleşenler
+                const aStarts = a.kalipKodu.toLowerCase().startsWith(query);
+                const bStarts = b.kalipKodu.toLowerCase().startsWith(query);
+                if (aStarts && !bStarts) return -1;
+                if (!aStarts && bStarts) return 1;
+                
+                // Son olarak alfabetik sıralama
+                return a.kalipKodu.localeCompare(b.kalipKodu);
+            }).slice(0, 50); // Maksimum 50 öneri
 
             if (matches.length === 0) {
                 suggestionsDiv.style.display = 'none';
@@ -2104,19 +2139,8 @@
                 return;
             }
 
-            // Benzersiz kalıpları al
-            const uniqueMatches = [];
-            const seenKalips = new Set();
-            
-            matches.forEach(item => {
-                if (!seenKalips.has(item.kalipKodu)) {
-                    seenKalips.add(item.kalipKodu);
-                    uniqueMatches.push(item);
-                }
-            });
-
-            // HTML oluştur
-            suggestionsDiv.innerHTML = uniqueMatches.map(item => `
+            // HTML oluştur - TÜM eşleşen kalıpları göster (yinelenenler dahil)
+            suggestionsDiv.innerHTML = matches.map(item => `
                 <div class="suggestion-item" onmousedown="selectKalip('${item.kalipKodu}', ${item.kgM})">
                     <div class="suggestion-kalip">${item.kalipKodu}</div>
                     <div class="suggestion-details">Figür: ${item.figur} | Kg/m: ${item.kgM.toFixed(3)}</div>
@@ -2124,7 +2148,7 @@
             `).join('');
 
             // Dropdown boyutuna göre tablo margin'ını ayarla
-            const dropdownHeight = Math.min(250, uniqueMatches.length * 50);
+            const dropdownHeight = Math.min(250, matches.length * 50);
             const newMargin = 30 + dropdownHeight + 10; // 10px ekstra boşluk
             tableContainer.style.marginTop = newMargin + 'px';
             
@@ -2231,10 +2255,14 @@
                              kgM.includes(searchTerm);
                 }
 
-                // Durum filtresi (artık durum sütunu yok, sadece duplicate/unique kontrolü)
+                // Durum filtresi (yinelenen/benzersiz kalıplar)
                 if (showRow && filterValue) {
-                    const kalipKoduText = cells[1].textContent;
-                    const isDuplicate = kalipData.filter(item => item.kalipKodu === kalipKoduText).length > 1;
+                    const kalipKoduText = cells[1].textContent.trim();
+                    // Kalıp koduna göre toplam sayıyı bul
+                    const duplicateCount = kalipData.filter(item => 
+                        item.kalipKodu && item.kalipKodu.trim() === kalipKoduText
+                    ).length;
+                    const isDuplicate = duplicateCount > 1;
                     
                     if (filterValue === 'duplicate') {
                         showRow = isDuplicate;
@@ -2618,13 +2646,20 @@
             }
             
             // Yerel verileri güncelle
-            kalipData = adminPreviewData.map((item, index) => ({
-                id: index + 1,
-                kalipKodu: item.kalipKodu,
-                figur: item.figur,
-                kgM: item.kgM,
-                isDuplicate: adminPreviewData.filter(p => p.kalipKodu === item.kalipKodu).length > 1
-            }));
+            kalipData = adminPreviewData.map((item, index) => {
+                const duplicateCount = adminPreviewData.filter(p => 
+                    p.kalipKodu && item.kalipKodu && 
+                    p.kalipKodu.trim() === item.kalipKodu.trim()
+                ).length;
+                
+                return {
+                    id: index + 1,
+                    kalipKodu: item.kalipKodu,
+                    figur: item.figur,
+                    kgM: item.kgM,
+                    isDuplicate: duplicateCount > 1
+                };
+            });
             
             // Local storage'a kaydet
             localStorage.setItem('kalipData', JSON.stringify(kalipData));
