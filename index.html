@@ -2700,8 +2700,10 @@
                 
                 showToast('info', 'Güncelleme Başlıyor', 'GitHub deposundan veriler indiriliyor...');
                 
-                // GitHub'dan Excel dosyasını eski commit'ten indir
-                const response = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://github.com/beymetal/kalip_verileri/raw/87cccda9ab1d7c0fdc5755ccac2ae2f481855f9b/BEYMETAL_KALIP_VERILERI.xlsx'));
+                // GitHub API kullanarak Excel dosyasını indir
+                const apiResponse = await fetch('https://api.github.com/repos/beymetal/kalip_verileri/contents/BEYMETAL_KALIP_VERILERI.xlsx');
+                const fileInfo = await apiResponse.json();
+                const response = await fetch(fileInfo.download_url);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
